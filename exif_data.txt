@@ -5,8 +5,8 @@
     exif:DateTime: 2018:12:13 16:07:26
     exif:DateTimeDigitized: 2018:12:13 16:07:26
     exif:DateTimeOriginal: 2018:12:13 16:07:26
-    exif:ExifImageLength: 256
-    exif:ExifImageWidth: 192
+    exif:ExifImageLength: 4032
+    exif:ExifImageWidth: 3024
     exif:ExifOffset: 222
     exif:ExifVersion: 48, 50, 50, 49
     exif:ExposureBiasValue: 0/1
