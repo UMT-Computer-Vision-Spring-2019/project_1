@@ -27,7 +27,6 @@ class Camera(object):
 
                     if (u > 0 and u < 2000) and (v > 0 and v < 1000):
                         pixels.append([u,v])
-                pass
 
     def rotational_transform(self,X):
         CAMERA_AZIMUTH = 45
@@ -94,7 +93,7 @@ class Camera(object):
 
                     xList.append(swapped[0])
                     yList.append(swapped[1])
-                pass
+
 
     def estimate_pose(self,X_gcp,u_gcp):
         """
@@ -102,3 +101,7 @@ class Camera(object):
         and the projected pixels coordinates of X_gcp is minimized.
         """
         pass
+def main(argv):
+
+if __name__=='__main__':
+  main(sys.argv[1:])
