@@ -1,6 +1,5 @@
-u v 323479 4306481 182 'Top of Washington Memorial'
-u v 323024 4306503 3   'Bottom of fountain'
-u v 324286 4306580 37  'Round dome in background - Natural History Museum'
-u v 324164 4306990 85  'Point of tall building in background left'
-u v 323017 4306515 22  'Top of flag pole in left of picture frame'
-
+u,v,323479,4306481,182,Top of Washington Memorial
+u,v,323024,4306503,3,Bottom of fountain
+u,v,324286,4306580,37,Round dome in background - Natural History Museum
+u,v,324164,4306990,85,Point of tall building in background left
+u,v,323017,4306515,22,Top of flag pole in left of picture frame
