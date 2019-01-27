@@ -1,52 +1,52 @@
+from scipy.optimize import least_squares as ls
+import numpy as np
+import sys
+
+
+class GroundControlPoint:
+    def __init__(self, u, v, Easting, Northing, Elevation, Description):
+        self.u = u
+        self.v = v
+        self.Easting = Easting
+        self.Northing = Northing
+        self.Elevation = Elevation
+        self.Description = Description
+
 class Camera(object):
     def __init__(self):
         self.p = None                   # Pose
         self.f = None                   # Focal Length in Pixels
+        self.sensorX = None
+        self.sensorY = None
+        self.x = None
+        self.y = None
         self.c = np.array([None,None])  #
 
-    def projective_transform(self,x):
-        pixels = []
-        image = argv[0]
-        transformed = []
+    def projective_transform(self, p0, p1, p2):
+        x = p0/p2
+        y = p1/p2
 
-        FOCAL_LENGTH = 1000
-        SENSOR_X = 2000
-        SENSOR_Y = 1000
-        CAMERA_X = SENSOR_X/2
-        CAMERA_Y = SENSOR_Y/2
-        with open(image) as file:
-            for p in file:
-                    p = p.strip()
-                    p = p.split(" ")
-                    x = float(p[0])/float(p[2])
-                    y = float(p[1])/float(p[2])
+        u = self.f * x + self.x
+        v = self.f * y + self.y
 
-                    u = FOCAL_LENGTH * x + CAMERA_X
-                    v = FOCAL_LENGTH * y + CAMERA_Y
+        return [u,v]
 
+    def rotational_transform(self, x):
 
-                    if (u > 0 and u < 2000) and (v > 0 and v < 1000):
-                        pixels.append([u,v])
+        cosAz= np.cos(self.p[3])
+        sinAz= np.sin(self.p[3])
 
-    def rotational_transform(self,X):
-        CAMERA_AZIMUTH = 45
-        cosAz= np.cos(CAMERA_AZIMUTH)
-        sinAz= np.sin(CAMERA_AZIMUTH)
+        cosPch= np.cos(self.p[4])
+        sinPch= np.sin(self.p[4])
 
-        CAMERA_PITCH = -10
-        cosPch= np.cos(CAMERA_PITCH)
-        sinPch= np.sin(CAMERA_PITCH)
-        CAMERA_ROLL = 0
-        cosRoll= np.cos(CAMERA_ROLL)
-        sinRoll= np.sin(CAMERA_ROLL)
-        CAMERA_EASTING = 10000
-        CAMERA_NORTHING = 5000
-        CAMERA_ELEVATION = 1000
+        cosRoll= np.cos(self.p[5])
+        sinRoll= np.sin(self.p[5])
+
 
         T = [
-        [1, 0, 0,-CAMERA_EASTING],
-        [0, 1, 0,-CAMERA_NORTHING],
-        [0, 0, 1,-CAMERA_ELEVATION],
+        [1, 0, 0,-self.p[0]],
+        [0, 1, 0,-self.p[1]],
+        [0, 0, 1,-self.p[2]],
         [0, 0, 0, 1]
         ]
 
@@ -73,35 +73,83 @@ class Camera(object):
         [0, 0, -1],
         [0, 1 , 0]
         ]
-        #C = Raxis, Rroll, Rpitch, Ryaw, T
-        xList = []
-        yList = []
-        with open(inFile) as file:
-            for p in file:
-                    p = p.strip()
-                    p = p.split(" ")
-                    x = float(p[0])
-                    y = float(p[1])
-                    z = float(p[2])
-                    point = [x,y,z,1]
+        point = [x[0],x[1],x[2],1]
 
-                    translated = np.matmul(T,point)
-                    yawed = np.matmul(Ryaw,translated)
-                    pitched = np.matmul(Rpitch,yawed)
-                    rolled = np.matmul(Rroll,pitched)
-                    swapped = np.matmul(Raxis,rolled)
+        translated = np.matmul(T,point)
+        yawed = np.matmul(Ryaw,translated)
+        pitched = np.matmul(Rpitch,yawed)
+        rolled = np.matmul(Rroll,pitched)
+        swapped = np.matmul(Raxis,rolled)
 
-                    xList.append(swapped[0])
-                    yList.append(swapped[1])
-
+        return self.projective_transform(swapped[0],swapped[1],swapped[2])
 
     def estimate_pose(self,X_gcp,u_gcp):
+
+        for gcp in X_gcp:
+            gcp = self.rotational_transform(gcp)
+
+        p_opt = ls(self.residual, self.p, method='lm',args=(X_gcp,u_gcp))['x']
         """
         This function adjusts the pose vector such that the difference between the observed pixel coordinates u_gcp
         and the projected pixels coordinates of X_gcp is minimized.
         """
-        pass
+    def residual(self,p,x,y):
+        self.p = p
+        #print(p)
+        #print(x)
+        #print(y)
+        resid =[]
+        for i,gcp in enumerate(x):
+            resid.append(self.rotational_transform(gcp)[1] - y[i][1])
+
+        #TODO: Doesn't work unless I append 1, this is wrong, but I don't know how to fix. 
+        resid.append(1)
+
+        return resid
+
+
+
+
 def main(argv):
+
+    FOCAL_LENGTH = 2448
+    SENSOR_X = 3264
+    SENSOR_Y = 2448
+    cam = Camera()
+    cam.f = FOCAL_LENGTH
+    cam.sensorX = SENSOR_X
+    cam.sensorY = SENSOR_Y
+    cam.x = cam.sensorX/2
+    cam.y = cam.sensorY/2
+    cam.p = np.array([0,0,0,0,0,0])
+
+    data = [
+    "|1984|1053|272558.68|5193938.07|1015 |Main hall spire|",
+
+    "|884 |1854|272572.34|5193981.03|982 |Large spruce|",
+
+    "|1202|1087|273171.31|5193846.77|1182 |Bottom of left tine of M|",
+
+    "|385 |1190|273183.35|5194045.24|1137 |Large rock outcrop on Sentinel|",
+
+    "|2350|1442|272556.74|5193922.02|998 |Southernmost window apex on main hall|"
+    ]
+
+    obs = []
+    true = []
+
+    for GCP in data:
+        GCP = GCP.strip("|")
+        GCP = GCP.split("|")
+        true.append([float(GCP[0]),float(GCP[1])])
+        obs.append([float(GCP[2]),float(GCP[3]),float(GCP[4])])
+
+    cam.estimate_pose(obs,true)
+    print(cam.p)
+
+    for GCP in obs:
+        print(cam.rotational_transform(GCP))
+
 
 if __name__=='__main__':
   main(sys.argv[1:])
