@@ -3,15 +3,6 @@ import numpy as np
 import sys
 
 
-class GroundControlPoint:
-    def __init__(self, u, v, Easting, Northing, Elevation, Description):
-        self.u = u
-        self.v = v
-        self.Easting = Easting
-        self.Northing = Northing
-        self.Elevation = Elevation
-        self.Description = Description
-
 class Camera(object):
     def __init__(self):
         self.p = None                   # Pose
@@ -93,17 +84,13 @@ class Camera(object):
         This function adjusts the pose vector such that the difference between the observed pixel coordinates u_gcp
         and the projected pixels coordinates of X_gcp is minimized.
         """
-    def residual(self,p,x,y):
+    def residual(self,p,X,U):
         self.p = p
-        #print(p)
-        #print(x)
-        #print(y)
         resid =[]
-        for i,gcp in enumerate(x):
-            resid.append(self.rotational_transform(gcp)[1] - y[i][1])
-
-        #TODO: Doesn't work unless I append 1, this is wrong, but I don't know how to fix. 
-        resid.append(1)
+        for i,gcp in enumerate(X):
+            pred = self.rotational_transform(gcp)
+            resid.append(pred[0] - U[i][0])
+            resid.append(pred[1] - U[i][1])
 
         return resid
 
@@ -145,6 +132,7 @@ def main(argv):
         obs.append([float(GCP[2]),float(GCP[3]),float(GCP[4])])
 
     cam.estimate_pose(obs,true)
+    
     print(cam.p)
 
     for GCP in obs:
