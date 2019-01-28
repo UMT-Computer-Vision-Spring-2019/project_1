@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 
 
 class Camera(object):
-    def __init__(self, gcp_coords):
+    def __init__(self, f, c):
         self.p = None  # Pose (x_cam, y_cam, z_cam, yaw, pitch, roll)
-        self.f = None  # Focal Length in Pixels
-        self.c = np.array([None, None])  # sensor size?
-        self.gcp_coords = gcp_coords
+        self.f = f  # Focal Length in Pixels
+        self.c = np.array(c)  # sensor size?
 
     def transforms(self, X):
         """
