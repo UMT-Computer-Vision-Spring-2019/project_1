@@ -1,0 +1,11 @@
+| u | v | Easting | Northing | Elevation | Description |
+|2264|930|272453.21|5193964.37|982|Boulder in oval|
+|2395|359|272494.71|5194018.74|998|JR front center roof middle over stairs|
+|1954|469|272482.07|5194023.19|995|JR left front roof corner|
+|2954|441|273784.43|5195308.13|1196|Center of L on Mt Jumbo|
+|1297|469|272476.87|5194070.11|999|Left front corner roof Journalism|
+|722|391|272473.46|5194025.26|995|Right front corner roof LA|
+|1142|518|272477.79|5194094.26|999|Left rear corner roof Journalism|
+|2672|498|272508.23|5194021.75|995|right front corner roof JR|
+|983|583|272477.42|5194127.56|998|right front corner of right most square on SS roof|
+|3133|441|272669.26|5194153.37|1020|Top of south vertical brick line Aber Hall|
