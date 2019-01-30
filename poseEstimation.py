@@ -76,30 +76,33 @@ class Camera(object):
         u,v = self.projective_transform(X)
 
         return u,v
-    def estimate_pose(self,X_gcp,u_gcp):
+
+    def estimate_pose(self,X_gcp,u_gcp,p):
         """
         This function adjusts the pose vector such that the difference between the observed pixel coordinates u_gcp
         and the projected pixels coordinates of X_gcp is minimized.
         """
 
-        p_opt = ls(self.residual, self.p, method='lm',args=(X_gcp,u_gcp))['x']
+        p_opt = ls(self.residual, p, method='lm',args=(X_gcp,u_gcp))['x']
 
-        self.p = p_opt
         return p_opt
+
     def residual(self,p,X,u_gcp):
 
         u,v = self.rotational_transform(X,p)
-
         u = np.squeeze(np.asarray(u - u_gcp[:,0]))
         v = np.squeeze(np.asarray(v - u_gcp[:,1]))
         resid = np.stack((u, v), axis=-1)
+
         resid = resid.flatten()
-        #print(resid)
+
+
         return resid
 
 
 
 def main(argv):
+
 
     FOCAL_LENGTH = 2448
     SENSOR_X = 3264
@@ -107,14 +110,15 @@ def main(argv):
 
     f = FOCAL_LENGTH
     c = np.array([SENSOR_X,SENSOR_Y])
-    p = np.array([0,0,0,0,0,0])
-    cam = Camera(p,f,c)
-    p_0 = np.array([0,0,0,0,0,0])
+    p_0 = np.array([272558,5193938,1015,10,10,10])
+
+    cam = Camera(p_0,f,c)
+
     obs = np.array([[272558.68, 5193938.07, 1015.,1],
-              [272572.34, 5193981.03, 982.,1],
-              [273171.31, 5193846.77, 1182.,1],
-              [273183.35, 5194045.24, 1137.,1],
-              [272556.74, 5193922.02, 998.,1]])
+                  [272572.34, 5193981.03, 982.,1],
+                  [273171.31, 5193846.77, 1182.,1],
+                  [273183.35, 5194045.24, 1137.,1],
+                  [272556.74, 5193922.02, 998.,1]])
 
     true = np.array([[1984., 1053.],
                       [884., 1854.],
@@ -124,8 +128,8 @@ def main(argv):
 
 
 
-    p_opt = cam.estimate_pose(obs,true)
-
+    p_opt = cam.estimate_pose(obs,true,p_0)
+    print(p_opt)
     for GCP in obs:
         print(cam.rotational_transform(GCP,p_opt))
 
