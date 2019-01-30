@@ -1,0 +1,8 @@
+Focal length: 5mm
+F-stop: f/2.8
+Exposure Time: 1/478 sec.
+Max Aperature 2.96875
+35mm focal length: 38
+
+Dimensions: 3264x1840
+Resolution 300 dpi
