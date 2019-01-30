@@ -1,107 +1,134 @@
+from scipy.optimize import least_squares as ls
+import numpy as np
+import sys
+
+
 class Camera(object):
-    def __init__(self):
-        self.p = None                   # Pose
-        self.f = None                   # Focal Length in Pixels
-        self.c = np.array([None,None])  #
+    def __init__(self,p,f,c):
+        self.p = p                   # Pose
+        self.f = f                   # Focal Length in Pixels
+        self.c = c
 
-    def projective_transform(self,x):
-        pixels = []
-        image = argv[0]
-        transformed = []
+    def projective_transform(self,X):
+        """
+        This function performs the projective transform on generalized coordinates in the camera reference frame.
+        """
+        projected = np.array([])
 
-        FOCAL_LENGTH = 1000
-        SENSOR_X = 2000
-        SENSOR_Y = 1000
-        CAMERA_X = SENSOR_X/2
-        CAMERA_Y = SENSOR_Y/2
-        with open(image) as file:
-            for p in file:
-                    p = p.strip()
-                    p = p.split(" ")
-                    x = float(p[0])/float(p[2])
-                    y = float(p[1])/float(p[2])
+        x = X[:,0]/X[:,2]
+        y = X[:,1]/X[:,2]
 
-                    u = FOCAL_LENGTH * x + CAMERA_X
-                    v = FOCAL_LENGTH * y + CAMERA_Y
+        u = self.f * x + self.c[0]/2
+        v = self.f * y + self.c[1]/2
+
+        u = np.hstack(u)
+        v = np.hstack(v)
+        return u,v
 
 
-                    if (u > 0 and u < 2000) and (v > 0 and v < 1000):
-                        pixels.append([u,v])
+    def rotational_transform(self, X, p):
 
-    def rotational_transform(self,X):
-        CAMERA_AZIMUTH = 45
-        cosAz= np.cos(CAMERA_AZIMUTH)
-        sinAz= np.sin(CAMERA_AZIMUTH)
+        """
+        This function performs the translation and rotation from world coordinates into generalized camera coordinates.
+        """
 
-        CAMERA_PITCH = -10
-        cosPch= np.cos(CAMERA_PITCH)
-        sinPch= np.sin(CAMERA_PITCH)
-        CAMERA_ROLL = 0
-        cosRoll= np.cos(CAMERA_ROLL)
-        sinRoll= np.sin(CAMERA_ROLL)
-        CAMERA_EASTING = 10000
-        CAMERA_NORTHING = 5000
-        CAMERA_ELEVATION = 1000
 
-        T = [
-        [1, 0, 0,-CAMERA_EASTING],
-        [0, 1, 0,-CAMERA_NORTHING],
-        [0, 0, 1,-CAMERA_ELEVATION],
-        [0, 0, 0, 1]
-        ]
+        cosAz= np.cos(p[3])
+        sinAz= np.sin(p[3])
 
-        Ryaw = [
+        cosPch= np.cos(p[4])
+        sinPch= np.sin(p[4])
+
+        cosRoll= np.cos(p[5])
+        sinRoll= np.sin(p[5])
+
+
+        T = np.mat([
+        [1, 0, 0,-p[0]],
+        [0, 1, 0,-p[1]],
+        [0, 0, 1,-p[2]],
+        [0, 0, 0, 1]])
+
+        Ryaw = np.mat([
         [cosAz, -sinAz, 0, 0],
         [sinAz, cosAz, 0, 0],
-        [0, 0, 1, 0]
-        ]
+        [0, 0, 1, 0]])
 
-        Rpitch = [
+        Rpitch = np.mat([
         [1, 0, 0],
         [0, cosPch, sinPch],
-        [0, -sinPch, cosPch]
-        ]
+        [0, -sinPch, cosPch]])
 
-        Rroll = [
+        Rroll = np.mat([
         [cosRoll, 0, -sinRoll],
         [0, 1, 0 ],
-        [sinRoll, 0 , cosRoll]
-        ]
+        [sinRoll, 0 , cosRoll]])
 
-        Raxis = [
+        Raxis = np.mat([
         [1, 0, 0],
         [0, 0, -1],
-        [0, 1 , 0]
-        ]
-        #C = Raxis, Rroll, Rpitch, Ryaw, T
-        xList = []
-        yList = []
-        with open(inFile) as file:
-            for p in file:
-                    p = p.strip()
-                    p = p.split(" ")
-                    x = float(p[0])
-                    y = float(p[1])
-                    z = float(p[2])
-                    point = [x,y,z,1]
+        [0, 1 , 0]])
 
-                    translated = np.matmul(T,point)
-                    yawed = np.matmul(Ryaw,translated)
-                    pitched = np.matmul(Rpitch,yawed)
-                    rolled = np.matmul(Rroll,pitched)
-                    swapped = np.matmul(Raxis,rolled)
+        C = Raxis @ Rroll @ Rpitch @ Ryaw @ T
 
-                    xList.append(swapped[0])
-                    yList.append(swapped[1])
+        X = X.dot(C.T)
 
+        u,v = self.projective_transform(X)
 
+        return u,v
     def estimate_pose(self,X_gcp,u_gcp):
         """
         This function adjusts the pose vector such that the difference between the observed pixel coordinates u_gcp
         and the projected pixels coordinates of X_gcp is minimized.
         """
-        pass
+
+        p_opt = ls(self.residual, self.p, method='lm',args=(X_gcp,u_gcp))['x']
+
+        self.p = p_opt
+        return p_opt
+    def residual(self,p,X,u_gcp):
+
+        u,v = self.rotational_transform(X,p)
+
+        u = np.squeeze(np.asarray(u - u_gcp[:,0]))
+        v = np.squeeze(np.asarray(v - u_gcp[:,1]))
+        resid = np.stack((u, v), axis=-1)
+        resid = resid.flatten()
+        #print(resid)
+        return resid
+
+
+
 def main(argv):
+
+    FOCAL_LENGTH = 2448
+    SENSOR_X = 3264
+    SENSOR_Y = 2448
+
+    f = FOCAL_LENGTH
+    c = np.array([SENSOR_X,SENSOR_Y])
+    p = np.array([0,0,0,0,0,0])
+    cam = Camera(p,f,c)
+    p_0 = np.array([0,0,0,0,0,0])
+    obs = np.array([[272558.68, 5193938.07, 1015.,1],
+              [272572.34, 5193981.03, 982.,1],
+              [273171.31, 5193846.77, 1182.,1],
+              [273183.35, 5194045.24, 1137.,1],
+              [272556.74, 5193922.02, 998.,1]])
+
+    true = np.array([[1984., 1053.],
+                      [884., 1854.],
+                      [1202., 1087.],
+                      [385., 1190.],
+                      [2350., 1442.]])
+
+
+
+    p_opt = cam.estimate_pose(obs,true)
+
+    for GCP in obs:
+        print(cam.rotational_transform(GCP,p_opt))
+
 
 if __name__=='__main__':
   main(sys.argv[1:])
