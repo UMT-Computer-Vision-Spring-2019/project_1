@@ -1,0 +1,5 @@
+1984|1053|272558|5193938|1015|Main hall spire
+884|1854|272572|5193981|982|Large spruce
+1202|1087|273171|5193846|1182|Bottom of left tine of M
+385|1190|273183|5194045|1137|Large rock outcrop on Sentinel
+2350|1442|272556|5193922|998|Southernmost window apex on main hall
